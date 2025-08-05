@@ -20,3 +20,15 @@ You can adjust the code to fit your design.
 
 
 
+Examples of how you can use the shortcode 
+
+\[seris\_slider]  <!-- Basic version (3 posts) -->
+
+
+
+\[seris\_slider posts\_per\_page="4" category="featured"]  <!-- 4 posts from "featured" category -->
+
+
+
+
+
