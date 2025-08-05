@@ -9,16 +9,23 @@ class Seris_Slider_Widget extends WP_Widget {
         );
     }
 
-    public function widget($args, $instance) {
-        echo $args['before_widget'];
-
-        if (!empty($instance['title'])) {
-            echo $args['before_title'] . esc_html($instance['title']) . $args['after_title'];
-        }
-
-        echo do_shortcode('[seris_slider]');
-        echo $args['after_widget'];
+   public function widget($args, $instance) {
+    // Escape before output
+    echo $args['before_widget'];
+    
+    if (!empty($instance['title'])) {
+        echo $args['before_title'] . 
+             esc_html($instance['title']) . 
+             $args['after_title'];
     }
+    
+    // Shortcode is already escaped in render_slider()
+    echo do_shortcode('[seris_slider]');
+    
+    echo $args['after_widget'];
+}
+
+
 
     public function form($instance) {
         $title = !empty($instance['title']) ? $instance['title'] : __('Latest Posts', 'seris-solutions');
@@ -38,9 +45,9 @@ class Seris_Slider_Widget extends WP_Widget {
         <?php
     }
 
-    public function update($new_instance, $old_instance) {
-        $instance = [];
-        $instance['title'] = sanitize_text_field($new_instance['title']);
-        return $instance;
-    }
+public function update($new_instance, $old_instance) {
+    $instance = [];
+    $instance['title'] = sanitize_text_field($new_instance['title']);
+    return $instance;
+}
 }

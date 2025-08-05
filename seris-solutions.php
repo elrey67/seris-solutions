@@ -28,24 +28,32 @@ if (!class_exists('Seris_Solutions_Slider')) {
         /**
          * Load CSS & JS only when needed
          */
-        public function load_assets() {
-            if ($this->is_slider_needed()) {
-                wp_enqueue_style(
-                    'seris-slider-css',
-                    plugin_dir_url(__FILE__) . 'assets/css/slider.css',
-                    [],
-                    filemtime(plugin_dir_path(__FILE__) . 'assets/css/slider.css')
-                );
-
-                wp_enqueue_script(
-                    'seris-slider-js',
-                    plugin_dir_url(__FILE__) . 'assets/js/slider.js',
-                    ['jquery'],
-                    filemtime(plugin_dir_path(__FILE__) . 'assets/js/slider.js'),
-                    true
-                );
-            }
+    public function load_assets() {
+    if ($this->is_slider_needed()) {
+        // Verify file locations
+        $css_path = plugin_dir_path(__FILE__) . 'assets/css/slider.css';
+        $js_path = plugin_dir_path(__FILE__) . 'assets/js/slider.js';
+        
+        if (file_exists($css_path)) {
+            wp_enqueue_style(
+                'seris-slider-css',
+                plugin_dir_url(__FILE__) . 'assets/css/slider.css',
+                [],
+                filemtime($css_path)
+            );
         }
+        
+        if (file_exists($js_path)) {
+            wp_enqueue_script(
+                'seris-slider-js',
+                plugin_dir_url(__FILE__) . 'assets/js/slider.js',
+                ['jquery'],
+                filemtime($js_path),
+                true
+            );
+        }
+    }
+}
 
         /**
          * Check if slider assets should load
@@ -69,13 +77,27 @@ if (!class_exists('Seris_Solutions_Slider')) {
         /**
          * Slider shortcode
          */
-      public function render_slider($atts) {
+   public function render_slider($atts) {
+    // Sanitize attributes
     $atts = shortcode_atts([
         'category'       => '',
         'posts_per_page' => 3,
-        'image_size'    => 'large', // Changed to 'large' for better quality
+        'image_size'    => 'large',
         'excerpt_length' => 12
     ], $atts);
+    
+    // Validate numeric values
+    $atts['posts_per_page'] = absint($atts['posts_per_page']);
+    $atts['excerpt_length'] = absint($atts['excerpt_length']);
+    
+    // Sanitize category
+    $atts['category'] = sanitize_title($atts['category']);
+    
+    // Validate image size
+    $valid_sizes = array_keys(wp_get_registered_image_subsizes());
+    if (!in_array($atts['image_size'], $valid_sizes)) {
+        $atts['image_size'] = 'large';
+    }
 
     ob_start();
     
@@ -90,15 +112,25 @@ if (!class_exists('Seris_Solutions_Slider')) {
             <div class="seris-slider-wrapper">
                 <?php while ($query->have_posts()) : $query->the_post(); ?>
                     <div class="seris-slide">
-                        <a href="<?php the_permalink(); ?>" class="seris-slide-image">
-                            <?php the_post_thumbnail($atts['image_size']); ?>
+                        <a href="<?php echo esc_url(get_permalink()); ?>" class="seris-slide-image">
+                            <?php echo wp_get_attachment_image(
+                                get_post_thumbnail_id(),
+                                $atts['image_size'],
+                                false,
+                                ['class' => 'seris-slide-img']
+                            ); ?>
                         </a>
                         <div class="seris-slide-content">
                             <h3 class="seris-slide-title">
-                                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                                <a href="<?php echo esc_url(get_permalink()); ?>">
+                                    <?php echo esc_html(get_the_title()); ?>
+                                </a>
                             </h3>
                             <div class="seris-slide-excerpt">
-                                <?php echo wp_trim_words(get_the_excerpt(), $atts['excerpt_length']); ?>
+                                <?php echo esc_html(wp_trim_words(
+                                    get_the_excerpt(), 
+                                    $atts['excerpt_length']
+                                )); ?>
                             </div>
                         </div>
                     </div>
