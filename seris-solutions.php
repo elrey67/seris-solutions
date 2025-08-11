@@ -23,37 +23,40 @@ if (!class_exists('Seris_Solutions_Slider')) {
 
             // Register widget
             add_action('widgets_init', [$this, 'register_widget']);
+            
+            // Add ad zones
+            add_action('wp_head', [$this, 'register_ad_zones'], 5);
         }
 
         /**
          * Load CSS & JS only when needed
          */
-    public function load_assets() {
-    if ($this->is_slider_needed()) {
-        // Verify file locations
-        $css_path = plugin_dir_path(__FILE__) . 'assets/css/slider.css';
-        $js_path = plugin_dir_path(__FILE__) . 'assets/js/slider.js';
-        
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'seris-slider-css',
-                plugin_dir_url(__FILE__) . 'assets/css/slider.css',
-                [],
-                filemtime($css_path)
-            );
+        public function load_assets() {
+            if ($this->is_slider_needed()) {
+                // Verify file locations
+                $css_path = plugin_dir_path(__FILE__) . 'assets/css/slider.css';
+                $js_path = plugin_dir_path(__FILE__) . 'assets/js/slider.js';
+                
+                if (file_exists($css_path)) {
+                    wp_enqueue_style(
+                        'seris-slider-css',
+                        plugin_dir_url(__FILE__) . 'assets/css/slider.css',
+                        [],
+                        filemtime($css_path)
+                    );
+                }
+                
+                if (file_exists($js_path)) {
+                    wp_enqueue_script(
+                        'seris-slider-js',
+                        plugin_dir_url(__FILE__) . 'assets/js/slider.js',
+                        ['jquery'],
+                        filemtime($js_path),
+                        true
+                    );
+                }
+            }
         }
-        
-        if (file_exists($js_path)) {
-            wp_enqueue_script(
-                'seris-slider-js',
-                plugin_dir_url(__FILE__) . 'assets/js/slider.js',
-                ['jquery'],
-                filemtime($js_path),
-                true
-            );
-        }
-    }
-}
 
         /**
          * Check if slider assets should load
@@ -77,78 +80,106 @@ if (!class_exists('Seris_Solutions_Slider')) {
         /**
          * Slider shortcode
          */
-   public function render_slider($atts) {
-    // Sanitize attributes
-    $atts = shortcode_atts([
-        'category'       => '',
-        'posts_per_page' => 3,
-        'image_size'    => 'large',
-        'excerpt_length' => 12
-    ], $atts);
-    
-    // Validate numeric values
-    $atts['posts_per_page'] = absint($atts['posts_per_page']);
-    $atts['excerpt_length'] = absint($atts['excerpt_length']);
-    
-    // Sanitize category
-    $atts['category'] = sanitize_title($atts['category']);
-    
-    // Validate image size
-    $valid_sizes = array_keys(wp_get_registered_image_subsizes());
-    if (!in_array($atts['image_size'], $valid_sizes)) {
-        $atts['image_size'] = 'large';
-    }
+        public function render_slider($atts) {
+            // Sanitize attributes
+            $atts = shortcode_atts([
+                'category' => '',
+                'posts_per_page' => 3,
+                'image_size' => 'large',
+                'excerpt_length' => 12
+            ], $atts);
 
-    ob_start();
-    
-    $query = new WP_Query([
-        'post_type'      => 'post',
-        'posts_per_page' => $atts['posts_per_page'],
-        'category_name'  => $atts['category']
-    ]);
+            // Query posts
+            $query = new WP_Query([
+                'post_type' => 'post',
+                'posts_per_page' => absint($atts['posts_per_page']),
+                'category_name' => sanitize_title($atts['category'])
+            ]);
 
-    if ($query->have_posts()) : ?>
-        <div class="seris-slider-container">
-            <div class="seris-slider-wrapper">
-                <?php while ($query->have_posts()) : $query->the_post(); ?>
-                    <div class="seris-slide">
-                        <a href="<?php echo esc_url(get_permalink()); ?>" class="seris-slide-image">
-                            <?php echo wp_get_attachment_image(
-                                get_post_thumbnail_id(),
-                                $atts['image_size'],
-                                false,
-                                ['class' => 'seris-slide-img']
-                            ); ?>
-                        </a>
-                        <div class="seris-slide-content">
-                            <h3 class="seris-slide-title">
+            // If no posts found, return early
+            if (!$query->have_posts()) {
+                return '<div class="seris-slider-container"><p>No posts found.</p></div>';
+            }
+
+            ob_start(); ?>
+            
+            <div class="seris-slider-container">
+                <div class="seris-slider-wrapper">
+                    <?php while ($query->have_posts()) : $query->the_post(); ?>
+                        <div class="seris-slide">
+                            <!-- Top Ad Zone -->
+                          <!-- <div class="seris-approved-adspot" 
+                                 data-ad-location="top"
+                                 data-ad-network="adsense,ezoic"></div> -->
+                            
+                            <!-- Image -->
+                            <div class="seris-slide-image-container">
                                 <a href="<?php echo esc_url(get_permalink()); ?>">
-                                    <?php echo esc_html(get_the_title()); ?>
+                                    <?php echo wp_get_attachment_image(
+                                        get_post_thumbnail_id(),
+                                        esc_attr($atts['image_size']),
+                                        false,
+                                        ['class' => 'seris-slide-img']
+                                    ); ?>
                                 </a>
-                            </h3>
-                            <div class="seris-slide-excerpt">
-                                <?php echo esc_html(wp_trim_words(
-                                    get_the_excerpt(), 
-                                    $atts['excerpt_length']
-                                )); ?>
                             </div>
+                            
+                            <!-- Content -->
+                            <div class="seris-slide-content">
+                                <h3 class=" seris-slide-title" ><a href="<?php echo esc_url(get_permalink()); ?>"><?php echo esc_html(get_the_title()); ?></a></h3>
+                                <p><?php echo esc_html(wp_trim_words(
+                                    get_the_excerpt(), 
+                                    absint($atts['excerpt_length'])
+                                )); ?></p>
+                                <div class="seris-slide-meta">
+                                    <span class="seris-slide-author">by <?php echo esc_html(get_the_author()); ?></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Bottom Ad Zone -->
+                          <!--  <div class="seris-approved-adspot" 
+                                 data-ad-location="bottom"
+                                 data-ad-network="adsense,ezoic"></div> -->
                         </div>
-                    </div>
-                <?php endwhile; ?>
+                    <?php endwhile; wp_reset_postdata(); ?>
+                </div>
+                
+                <!-- Pagination Dots -->
+                <div class="seris-slider-pagination"></div>
             </div>
-        </div>
-    <?php endif;
-
-    wp_reset_postdata();
-    return ob_get_clean();
-}
+            
+            <?php
+            return ob_get_clean();
+        }
+        
+        /**
+         * Register ad zones
+         */
+        public function register_ad_zones() {
+            if (!is_admin()) {
+                echo '<!-- Seris Solutions Ad Zones -->';
+                echo '<meta name="seris-ad-zones" content="approved">';
+                
+                // For AdSense
+                echo '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1074859157597727&amp;host=ca-host-pub-2644536267352236" crossorigin="anonymous"></script>';
+                
+                // For Ezoic (if needed)
+               // echo '<script id="ezoic-placeholder">';
+               // echo 'var ezstandalone = ezstandalone || {};';
+               // echo 'ezstandalone.cmd = ezstandalone.cmd || [];';
+                //echo '</script>';
+            }
+        }
 
         /**
          * Register widget
          */
         public function register_widget() {
-            require_once plugin_dir_path(__FILE__) . 'includes/class-seris-slider.php';
-            register_widget('Seris_Slider_Widget');
+            $widget_file = plugin_dir_path(__FILE__) . 'includes/class-seris-slider-widget.php';
+            if (file_exists($widget_file)) {
+                require_once $widget_file;
+                register_widget('Seris_Slider_Widget');
+            }
         }
     }
 

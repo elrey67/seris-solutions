@@ -1,54 +1,59 @@
-/* Inherit GeneratePress variables with custom fonts */
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500&family=Roboto+Flex:wght@400&display=swap');
+
+/* CSS Variables */
 :root {
   --seris-heading-font: 'Lora', var(--heading-font-family, serif);
   --seris-body-font: 'Roboto Flex', var(--body-font-family, sans-serif);
+  --seris-primary-color: #1A6B54;
+  --seris-text-color: #000000;
+  --slide-image-height: 400px;
+  --slide-image-height-mobile: 250px;
+  --title-font-size: 2.25rem;
+  --title-font-size-mobile: 1.5rem;
 }
 
-/* Main slider container - equal height slides */
+/* Base Slider Styles */
 .seris-slider-container {
   position: relative;
-  max-width: var(--container-width, 1200px);
+  max-width: min(1200px, 95vw);
   margin: 2rem auto;
   overflow: hidden;
+  contain: layout paint style;
 }
 
-/* Slides wrapper - infinite loop preparation */
 .seris-slider-wrapper {
   display: flex;
   transition: transform 0.5s ease;
+  width: 100%;
 }
 
-/* Individual slide - equal height */
 .seris-slide {
   min-width: 100%;
-  flex: 1 0 100%;
+  flex: 0 0 100%;
   display: flex;
   flex-direction: column;
-  padding: 0 1rem;
   box-sizing: border-box;
 }
 
-/* Image container - fixed aspect ratio */
-.seris-slide-image {
-  display: block;
-  height: 300px; /* Fixed height */
+/* Image Container - Mobile First */
+.seris-slide-image-container {
+  height: var(--slide-image-height-mobile);
   overflow: hidden;
+  position: relative;
+  border-radius: 8px;
 }
 
-.seris-slide-image img {
+.seris-slide-image-container img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures consistent image cropping */
+  object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.seris-slide-image:hover img {
-  transform: scale(1.03);
-}
-
-/* Content container - centered text */
+/* Content Area */
 .seris-slide-content {
-  padding: 1.5rem;
+  padding: 1.25rem 0.5rem;
   text-align: center;
   flex-grow: 1;
   display: flex;
@@ -60,30 +65,124 @@
 .seris-slide-title {
   font-family: var(--seris-heading-font);
   font-weight: 500;
-  font-size: 36px;
-  margin: 0 0 0.5rem;
+  font-size: var(--title-font-size-mobile);
+  margin: 0 0 0.75rem;
   line-height: 1.3;
-}
-
-.seris-slide-title a {
-  color: var(--text-color, #333);
-  text-decoration: none;
+  color: var(--seris-text-color); 
+  word-wrap: break-word;
 }
 
 .seris-slide-excerpt {
   font-family: var(--seris-body-font);
-  font-variation-settings: 'wght' 400, 'slnt' 0;
   font-size: 1rem;
-  line-height: 1.6;
-  color: var(--light-text-color, #666);
-  margin: 0;
+  line-height: 1.5;
+  color: var(--seris-text-color);
+  margin: 0 auto;
+  max-width: 90%;
+  padding: 0 0.5rem;
 }
 
-/* Removed arrows (as requested) */
+/* Ad Zones */
+.seris-approved-adspot {
+  min-height: 50px;
+  background: transparent;
+  contain: style layout;
+  margin: 0.5rem 0;
+}
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .seris-slide-image {
-    height: 200px;
+/* Desktop Styles */
+@media (min-width: 768px) {
+  :root {
+    --slide-image-height-mobile: var(--slide-image-height);
+    --title-font-size-mobile: var(--title-font-size);
   }
+  
+  .seris-slide {
+    padding: 0 1rem;
+  }
+  
+  .seris-slide-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .seris-slide-excerpt {
+    max-width: 80%;
+    padding: 0 1rem;
+  }
+}
+
+/* Larger Desktop */
+@media (min-width: 1024px) {
+  .seris-slide-excerpt {
+    max-width: 70%;
+  }
+}
+
+/* Touch Enhancements */
+@media (hover: none) {
+  .seris-slide-image-container img {
+    transform: none !important;
+  }
+}
+
+/* Add/Replace these styles in your slider.css */
+
+/* Pagination Dots */
+.seris-slider-pagination {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10;
+  padding: 0 15px;
+}
+
+.seris-slider-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b2b2be;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.seris-slider-dot.active {
+  background: var(--seris-text-color);
+  transform: scale(1.2);
+}
+
+/* Touch Improvements */
+.seris-slider-wrapper {
+  cursor: grab;
+}
+
+.seris-slider-wrapper.grabbing {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* Remove arrows */
+.seris-slider-nav {
+  display: none !important;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .seris-slider-pagination {
+    bottom: 10px;
+  }
+  
+  .seris-slider-dot {
+    width: 8px;
+    height: 8px;
+  }
+	
+	.seris-slider-pagination {
+  bottom: 10px;
+	}
 }

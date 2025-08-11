@@ -1,89 +1,138 @@
-/* Inherit GeneratePress variables with custom fonts */
-:root {
-  --seris-heading-font: 'Lora', var(--heading-font-family, serif);
-  --seris-body-font: 'Roboto Flex', var(--body-font-family, sans-serif);
-}
-
-/* Main slider container - equal height slides */
-.seris-slider-container {
-  position: relative;
-  max-width: var(--container-width, 1200px);
-  margin: 2rem auto;
-  overflow: hidden;
-}
-
-/* Slides wrapper - infinite loop preparation */
-.seris-slider-wrapper {
-  display: flex;
-  transition: transform 0.5s ease;
-}
-
-/* Individual slide - equal height */
-.seris-slide {
-  min-width: 100%;
-  flex: 1 0 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0 1rem;
-  box-sizing: border-box;
-}
-
-/* Image container - fixed aspect ratio */
-.seris-slide-image {
-  display: block;
-  height: 300px; /* Fixed height */
-  overflow: hidden;
-}
-
-.seris-slide-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Ensures consistent image cropping */
-  transition: transform 0.3s ease;
-}
-
-.seris-slide-image:hover img {
-  transform: scale(1.03);
-}
-
-/* Content container - centered text */
-.seris-slide-content {
-  padding: 1.5rem;
-  text-align: center;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-/* Typography */
-.seris-slide-title {
-  font-family: var(--seris-heading-font);
-  font-weight: 500;
-  font-size: 36px;
-  margin: 0 0 0.5rem;
-  line-height: 1.3;
-}
-
-.seris-slide-title a {
-  color: var(--text-color, #333);
-  text-decoration: none;
-}
-
-.seris-slide-excerpt {
-  font-family: var(--seris-body-font);
-  font-variation-settings: 'wght' 400, 'slnt' 0;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--light-text-color, #666);
-  margin: 0;
-}
-
-/* Removed arrows (as requested) */
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .seris-slide-image {
-    height: 200px;
-  }
-}
+jQuery(document).ready(function($) {
+  $('.seris-slider-container').each(function() {
+    const $slider = $(this);
+    const $wrapper = $slider.find('.seris-slider-wrapper');
+    const $slides = $wrapper.children('.seris-slide');
+    const $prevBtn = $slider.find('.seris-slider-prev');
+    const $nextBtn = $slider.find('.seris-slider-next');
+    const $pagination = $slider.find('.seris-slider-pagination');
+    
+    if ($slides.length <= 1) return;
+    
+    // Create pagination dots
+    $slides.each(function(index) {
+      $pagination.append(`<button class="seris-slider-dot" data-index="${index}"></button>`);
+    });
+    
+    const $dots = $pagination.find('.seris-slider-dot');
+    let currentIndex = 0;
+    let isAnimating = false;
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    let autoSlideInterval;
+    
+    // Initialize
+    updatePagination();
+    startAutoSlide();
+    
+    // Navigation functions
+    function goToSlide(index) {
+      if (isAnimating || index === currentIndex) return;
+      
+      isAnimating = true;
+      currentIndex = index;
+      
+      $wrapper.css('transform', `translateX(-${currentIndex * 100}%)`);
+      updatePagination();
+      
+      setTimeout(() => {
+        isAnimating = false;
+      }, 500);
+    }
+    
+    function updatePagination() {
+      $dots.removeClass('active').eq(currentIndex).addClass('active');
+    }
+    
+    function startAutoSlide() {
+      // Clear existing interval if any
+      if (autoSlideInterval) clearInterval(autoSlideInterval);
+      
+      // Set new interval (5 seconds)
+      autoSlideInterval = setInterval(() => {
+        goToSlide((currentIndex + 1) % $slides.length);
+      }, 5000);
+    }
+    
+    function resetAutoSlide() {
+      startAutoSlide();
+    }
+    
+    // Pause auto slide on hover
+    $slider.hover(
+      function() {
+        clearInterval(autoSlideInterval);
+      },
+      function() {
+        resetAutoSlide();
+      }
+    );
+    
+    // Pause auto slide on drag/touch
+    $wrapper.on('touchstart pointerdown', function(e) {
+      clearInterval(autoSlideInterval);
+      if (isAnimating) return;
+      
+      isDragging = true;
+      startX = e.type === 'touchstart' ? e.originalEvent.touches[0].clientX : e.clientX;
+      currentX = startX;
+      $wrapper.addClass('grabbing');
+    });
+    
+    // Arrow navigation
+    $prevBtn.on('click', function() {
+      goToSlide((currentIndex - 1 + $slides.length) % $slides.length);
+      resetAutoSlide();
+    });
+    
+    $nextBtn.on('click', function() {
+      goToSlide((currentIndex + 1) % $slides.length);
+      resetAutoSlide();
+    });
+    
+    // Dot navigation
+    $dots.on('click', function() {
+      goToSlide(parseInt($(this).data('index')));
+      resetAutoSlide();
+    });
+    
+    // Touch/swipe handling
+    $(document).on('touchmove pointermove', function(e) {
+      if (!isDragging) return;
+      
+      e.preventDefault();
+      const x = e.type === 'touchmove' ? e.originalEvent.touches[0].clientX : e.clientX;
+      const diff = currentX - x;
+      currentX = x;
+      
+      // Move the wrapper temporarily during drag
+      const currentTransform = -currentIndex * 100;
+      const newTransform = currentTransform + (diff / $wrapper.outerWidth()) * 100;
+      $wrapper.css('transform', `translateX(${newTransform}%)`);
+    });
+    
+    $(document).on('touchend pointerup', function(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      $wrapper.removeClass('grabbing');
+      resetAutoSlide();
+      
+      const endX = e.type === 'touchend' ? e.originalEvent.changedTouches[0].clientX : e.clientX;
+      const diff = startX - endX;
+      const threshold = $wrapper.outerWidth() * 0.2;
+      
+      if (diff > threshold) {
+        // Swipe left - next slide
+        goToSlide((currentIndex + 1) % $slides.length);
+      } else if (diff < -threshold) {
+        // Swipe right - previous slide
+        goToSlide((currentIndex - 1 + $slides.length) % $slides.length);
+      } else {
+        // Return to current slide
+        goToSlide(currentIndex);
+      }
+    });
+  });
+});
